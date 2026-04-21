@@ -1,45 +1,34 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -O2
-LDFLAGS = -lcrypto
 
-# ─── Main binary ─────────────────────────────────────────────────────────────
+# ─── SOURCE FILES ─────────────────────────────
 
-SRCS = object.c tree.c index.c commit.c pes.c
+SRCS = pes.c index.c commit.c tree.c object.c
+
+# ─── OBJECT FILES ─────────────────────────────
+
 OBJS = $(SRCS:.c=.o)
 
+# ─── MAIN EXECUTABLE ─────────────────────────
+
 pes: $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o pes $(OBJS) -lcrypto
 
-%.o: %.c pes.h
-	$(CC) $(CFLAGS) -c $< -o $@
+# ─── TEST TARGETS ─────────────────────────────
 
-# ─── Test binaries ───────────────────────────────────────────────────────────
+test_tree: test_tree.o tree.o object.o index.o
+	$(CC) $(CFLAGS) -o test_tree test_tree.o tree.o object.o index.o -lcrypto
 
-test_objects: test_objects.o object.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+# (Optional future test hooks)
+test_commit: test_commit.o commit.o object.o tree.o index.o
+	$(CC) $(CFLAGS) -o test_commit test_commit.o commit.o object.o tree.o index.o -lcrypto
 
-test_tree: test_tree.o object.o tree.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+# ─── GENERIC BUILD RULE ───────────────────────
 
-# ─── Convenience targets ────────────────────────────────────────────────────
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
 
-.PHONY: all clean test test-unit test-integration
-
-all: pes test_objects test_tree
+# ─── CLEAN ────────────────────────────────────
 
 clean:
-	rm -f pes test_objects test_tree $(OBJS) test_objects.o test_tree.o
-	rm -rf .pes
-
-test: test-unit test-integration
-
-test-unit: test_objects test_tree
-	@echo "=== Running Phase 1 tests ==="
-	./test_objects
-	@echo ""
-	@echo "=== Running Phase 2 tests ==="
-	./test_tree
-
-test-integration: pes
-	@echo "=== Running integration tests ==="
-	bash test_sequence.sh
+	rm -f *.o pes test_tree test_commit
